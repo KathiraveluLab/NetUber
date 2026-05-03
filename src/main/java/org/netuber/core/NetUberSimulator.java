@@ -58,5 +58,6 @@ public class NetUberSimulator {
         orchestrator.handleRuntimeChurn();
 
         logger.info("Simulation Complete.");
+        System.exit(0);
     }
 }
