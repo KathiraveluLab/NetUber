@@ -23,6 +23,7 @@ public class Node {
     public double getRamCapacity() { return ramCapacity; }
     public double getBandwidthCapacity() { return bandwidthCapacity; }
     public double getSpotPrice() { return spotPrice; }
+    public void setSpotPrice(double spotPrice) { this.spotPrice = spotPrice; }
 
     @Override
     public String toString() {

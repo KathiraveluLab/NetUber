@@ -8,16 +8,17 @@ NetUber is a research framework for simulating and orchestrating latency-sensiti
 NetUber provides the following capabilities:
 
 * **DAG-Aware Orchestration**: Workflows are modeled as Directed Acyclic Graphs (DAGs), enabling complex multi-stage pipelines (e.g., Ingestion -> Transcoding -> Storage) with specific data volume constraints.
-* **Spot Price Optimization**: The orchestrator dynamically evaluates the spot price of different availability zones and regions to minimize the cost of deploying the overlay network.
+* **Dynamic Spot Price Optimization**: The orchestrator dynamically evaluates fluctuating spot prices across regions to minimize deployment costs in a volatile cloud market.
 * **Bandwidth-Aware Routing**: Evaluates outbound bandwidth requirements across the service graph to select deployment nodes capable of handling the data volume.
-* **Spot Preemption Simulation**: Provides a stochastic simulation of cloud spot instance preemption (runtime churn), forcing the orchestrator to dynamically recover and re-place services when underlying VMs are terminated.
+* **Resilient Recovery Loop**: Provides a stochastic simulation of cloud spot instance preemption (runtime churn) and an automated recovery loop that re-places services to maintain workflow continuity.
+* **Advanced Latency Verification**: Uses critical path analysis to estimate end-to-end DAG latency, ensuring strict compliance with service-level objectives (SLOs).
 * **Middleware Integration**: Fully integrated with the `Messaging4Transport` (M4T) architecture. Uses an AMQP broker (ActiveMQ) for publishing virtual router deployments and service placements, enabling a federated, event-driven orchestration model.
 
 ## Architecture
 
 * **Core Models**: `Node`, `Link`, `VirtualRouter`, and `Workflow`.
-* **LatencyAwarePlacement**: The engine responsible for calculating the optimal deployment map for a DAG workflow across the available topology, minimizing cost while verifying bandwidth and latency constraints.
-* **OverlayManager**: Manages the lifecycle of the shared Virtual Router fleet.
+* **LatencyAwarePlacement**: The engine responsible for calculating optimal deployment maps using bandwidth-aware heuristics and critical path latency verification.
+* **OverlayManager**: Manages the lifecycle of the shared Virtual Router fleet and simulates regional price fluctuations.
 * **ConnectivityProvider**: The M4T facade that authenticates and publishes orchestration events to external messaging queues.
 
 ## Getting Started

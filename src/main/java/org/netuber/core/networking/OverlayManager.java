@@ -25,16 +25,31 @@ public class OverlayManager {
     }
 
     public void simulateSpotPreemption() {
-        logger.info("Simulating spot preemption events...");
+        logger.info("Simulating spot preemption events based on price spikes...");
         Random random = new Random();
         for (List<VirtualRouter> vrs : nodeVRMap.values()) {
             for (VirtualRouter vr : vrs) {
-                if (vr.isActive() && random.nextDouble() < vr.getPreemptionProbability()) {
+                Node node = vr.getHostNode();
+                // If price spikes significantly (> 2.0), preemption probability increases
+                double effectiveProb = node.getSpotPrice() > 2.0 ? vr.getPreemptionProbability() * 5 : vr.getPreemptionProbability();
+                
+                if (vr.isActive() && random.nextDouble() < effectiveProb) {
                     vr.setActive(false);
-                    logger.warn("CRITICAL: VR {} preempted from node {} due to cloud price spikes!", 
-                            vr.getId(), vr.getHostNode().getId());
+                    logger.warn("CRITICAL: VR {} preempted from node {} due to cloud price spikes (Current Price: {})!", 
+                            vr.getId(), node.getId(), node.getSpotPrice());
                 }
             }
+        }
+    }
+
+    public void updateSpotPrices(List<Node> nodes) {
+        logger.info("Updating cloud spot prices across regions...");
+        Random random = new Random();
+        for (Node node : nodes) {
+            // Price fluctuates by +/- 20%
+            double change = 0.8 + (1.2 - 0.8) * random.nextDouble();
+            node.setSpotPrice(node.getSpotPrice() * change);
+            logger.info("Node {}: New Spot Price: {}", node.getId(), String.format("%.2f", node.getSpotPrice()));
         }
     }
 

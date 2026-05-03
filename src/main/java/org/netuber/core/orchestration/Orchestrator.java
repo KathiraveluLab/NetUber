@@ -15,6 +15,10 @@ public class Orchestrator {
     private LatencyAwarePlacement placementEngine;
 
     private ConnectivityProvider connectivityProvider;
+    private Workflow currentWorkflow;
+    private Map<String, Node> currentPlacement;
+    private List<Node> currentTopology;
+    private List<Link> currentLinks;
 
     public Orchestrator(OverlayManager overlayManager, LatencyAwarePlacement placementEngine, ConnectivityProvider connectivityProvider) {
         this.overlayManager = overlayManager;
@@ -23,6 +27,10 @@ public class Orchestrator {
     }
 
     public void orchestrateWorkflow(Workflow workflow, List<Node> topology, List<Link> links) {
+        this.currentWorkflow = workflow;
+        this.currentTopology = topology;
+        this.currentLinks = links;
+        
         logger.info("Starting Paper-Parity Orchestration for {}", workflow.getId());
         
         // 1. Manage Overlay: Ensure active VRs are available
@@ -35,11 +43,11 @@ public class Orchestrator {
         }
 
         // 2. Calculate Advanced Placement (Bandwidth & Cost Aware)
-        Map<String, Node> placement = placementEngine.calculatePlacement(workflow, topology, links);
-        connectivityProvider.publishServicePlacement(workflow, placement);
+        this.currentPlacement = placementEngine.calculatePlacement(workflow, topology, links);
+        connectivityProvider.publishServicePlacement(workflow, currentPlacement);
         
         // 3. Verify DAG Latency Constraints
-        double estimatedLatency = placementEngine.estimateEndToEndLatency(workflow, placement, links);
+        double estimatedLatency = placementEngine.estimateEndToEndLatency(workflow, currentPlacement, links);
         if (estimatedLatency <= workflow.getMaxLatency()) {
             logger.info("NetUber Success! Estimated DAG Latency: {}ms", estimatedLatency);
         } else {
@@ -50,11 +58,24 @@ public class Orchestrator {
 
     public void handleRuntimeChurn() {
         logger.info("Detecting spot preemption in the fleet...");
+        overlayManager.updateSpotPrices(currentTopology);
         overlayManager.simulateSpotPreemption();
         
-        List<VirtualRouter> active = overlayManager.getAllActiveVRs();
-        logger.info("Active shared fleet size: {}", active.size());
-        
-        // Trigger recovery for affected services (re-placement logic)
+        if (currentWorkflow == null || currentPlacement == null) return;
+
+        boolean recoveryNeeded = false;
+        for (Map.Entry<String, Node> entry : currentPlacement.entrySet()) {
+            if (overlayManager.getActiveVRs(entry.getValue()).isEmpty()) {
+                logger.warn("CRITICAL: Service {} lost its hosting VR on node {}!", entry.getKey(), entry.getValue().getId());
+                recoveryNeeded = true;
+            }
+        }
+
+        if (recoveryNeeded) {
+            logger.info("Initiating research-parity recovery for workflow: {}", currentWorkflow.getId());
+            orchestrateWorkflow(currentWorkflow, currentTopology, currentLinks);
+        } else {
+            logger.info("No active services affected by preemption. Shared fleet remains stable.");
+        }
     }
 }
