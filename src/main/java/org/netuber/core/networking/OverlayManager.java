@@ -53,6 +53,17 @@ public class OverlayManager {
         }
     }
 
+    public void updateVRStatus(String vrId, boolean isActive) {
+        for (List<VirtualRouter> vrs : nodeVRMap.values()) {
+            for (VirtualRouter vr : vrs) {
+                if (vr.getId().equals(vrId)) {
+                    vr.setActive(isActive);
+                    return;
+                }
+            }
+        }
+    }
+
     public List<VirtualRouter> getAllActiveVRs() {
         List<VirtualRouter> active = new ArrayList<>();
         for (List<VirtualRouter> vrs : nodeVRMap.values()) {

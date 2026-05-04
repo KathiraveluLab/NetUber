@@ -5,6 +5,7 @@ import org.netuber.core.networking.ConnectivityProvider;
 import org.netuber.core.networking.OverlayManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.json.JSONObject;
 
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,22 @@ public class Orchestrator {
         this.overlayManager = overlayManager;
         this.placementEngine = placementEngine;
         this.connectivityProvider = connectivityProvider;
+        
+        // Listen for real-world feedback from Local Agents
+        this.connectivityProvider.subscribeToStatus(this::handleAgentStatus);
+    }
+
+    private void handleAgentStatus(String message) {
+        try {
+            JSONObject status = new JSONObject(message);
+            String vrId = status.getString("vrId");
+            String state = status.getString("status");
+            
+            logger.info("[SDI-FEEDBACK] VR {} reported state: {}", vrId, state);
+            overlayManager.updateVRStatus(vrId, state.equals("ACTIVE"));
+        } catch (Exception e) {
+            logger.error("Failed to process agent status: {}", message);
+        }
     }
 
     public void orchestrateWorkflow(Workflow workflow, List<Node> topology, List<Link> links) {
